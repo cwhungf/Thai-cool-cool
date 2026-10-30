@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <title>BANGKOK & PATTAYA 2027 // FAMILY TACTICAL DASHBOARD</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #08090c;
+            --card-bg: rgba(16, 20, 29, 0.85);
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-yellow: #ffe600;
+            --neon-green: #00ff66;
+            --text-main: #e0e6ed;
+            --text-dim: #7a8b9e;
+            --border-color: rgba(0, 243, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(0, 243, 255, 0.08), transparent 70%),
+                linear-gradient(0deg, rgba(8, 9, 12, 0.9) 0%, rgba(8, 9, 12, 0.9) 100%);
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        /* 賽博龐克抬頭指示器 */
+        header {
+            background: rgba(10, 14, 23, 0.95);
+            border-bottom: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            padding: 20px 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .title-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.4rem;
+            color: #fff;
+            text-shadow: 0 0 10px var(--neon-cyan);
+            letter-spacing: 2px;
+        }
+
+        .badge-family {
+            background: rgba(0, 255, 102, 0.15);
+            border: 1px solid var(--neon-green);
+            color: var(--neon-green);
+            font-size: 0.75rem;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-family: 'Orbitron', sans-serif;
+        }
+
+        /* 倒數計時面板 */
+        .countdown-box {
+            background: rgba(0, 243, 255, 0.05);
+            border: 1px dashed var(--border-color);
+            padding: 10px;
+            border-radius: 4px;
+            display: flex;
+            justify-content: space-around;
+            text-align: center;
+        }
+
+        .timer-unit .val {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--neon-cyan);
+        }
+
+        .timer-unit .lbl {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+        }
+
+        /* 主容器 Layout */
+        .main-layout {
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 0 15px;
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+        }
+
+        @media (min-width: 900px) {
+            .main-layout {
+                grid-template-columns: 1fr 450px;
+            }
+        }
+
+        /* 戰術地圖模組 */
+        .map-section {
+            border: 1px solid var(--neon-cyan);
+            border-radius: 6px;
+            overflow: hidden;
+            box-shadow: 0 0 20px rgba(0, 0, 0, 0.8);
+            position: relative;
+        }
+
+        #tactical-map {
+            height: 380px;
+            width: 100%;
+            background: #111;
+        }
+
+        @media (min-width: 900px) {
+            .map-section {
+                position: sticky;
+                top: 140px;
+                height: calc(100vh - 160px);
+            }
+            #tactical-map {
+                height: 100%;
+            }
+        }
+
+        /* 控制按鈕列 */
+        .filter-bar {
+            display: flex;
+            gap: 8px;
+            overflow-x: auto;
+            padding-bottom: 8px;
+            margin-bottom: 15px;
+        }
+
+        .btn-filter {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--text-dim);
+            color: var(--text-main);
+            padding: 6px 12px;
+            border-radius: 4px;
+            font-size: 0.8rem;
+            white-space: nowrap;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .btn-filter.active {
+            background: rgba(0, 243, 255, 0.2);
+            border-color: var(--neon-cyan);
+            color: var(--neon-cyan);
+            box-shadow: 0 0 10px rgba(0, 243, 255, 0.3);
+        }
+
+        /* 行程卡片清單 */
+        .timeline {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .date-header {
+            font-family: 'Orbitron', sans-serif;
+            color: var(--neon-yellow);
+            border-bottom: 1px solid var(--neon-yellow);
+            padding-bottom: 5px;
+            margin-top: 15px;
+            font-size: 1rem;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-left: 4px solid var(--neon-cyan);
+            border-radius: 4px;
+            padding: 12px 15px;
+            transition: transform 0.2s, border-color 0.2s;
+            cursor: pointer;
+        }
+
+        .card:hover {
+            transform: translateX(4px);
+            border-color: var(--neon-cyan);
+            box-shadow: 0 0 12px rgba(0, 243, 255, 0.15);
+        }
+
+        .card-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: var(--text-dim);
+            margin-bottom: 6px;
+        }
+
+        .card-tag {
+            padding: 1px 6px;
+            border-radius: 2px;
+            font-size: 0.7rem;
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .tag-food { border: 1px solid var(--neon-yellow); color: var(--neon-yellow); }
+        .tag-massage { border: 1px solid var(--neon-green); color: var(--neon-green); }
+        .tag-bar { border: 1px solid var(--neon-pink); color: var(--neon-pink); }
+        .tag-spot { border: 1px solid var(--neon-cyan); color: var(--neon-cyan); }
+
+        .card-title {
+            font-size: 1.05rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 6px;
+        }
+
+        .card-desc {
+            font-size: 0.85rem;
+            color: var(--text-main);
+            line-height: 1.4;
+            margin-bottom: 10px;
+        }
+
+        .card-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px dashed rgba(255,255,255,0.1);
+            padding-top: 8px;
+            font-size: 0.75rem;
+        }
+
+        .btn-nav {
+            color: var(--neon-cyan);
+            text-decoration: none;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .btn-nav:hover {
+            text-decoration: underline;
+        }
+
+        /* 地圖螢光 Pin 點設定 */
+        .custom-pin {
+            width: 12px;
+            height: 12px;
+            background-color: var(--neon-cyan);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--neon-cyan), 0 0 20px var(--neon-cyan);
+            border: 2px solid #fff;
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="header-container">
+            <div class="title-bar">
+                <h1>BKK & PTY 2027</h1>
+                <span class="badge-family">FAMILY VER. 闔家觀賞</span>
+            </div>
+            
+            <div class="countdown-box">
+                <div class="timer-unit"><div class="val" id="d">-</div><div class="lbl">DAYS</div></div>
+                <div class="timer-unit"><div class="val" id="h">-</div><div class="lbl">HRS</div></div>
+                <div class="timer-unit"><div class="val" id="m">-</div><div class="lbl">MIN</div></div>
+                <div class="timer-unit"><div class="val" id="s">-</div><div class="lbl">SEC</div></div>
+            </div>
+        </div>
+    </header>
+
+    <div class="main-layout">
+        <!-- 列表與控制欄 -->
+        <section class="content-section">
+            <div class="filter-bar">
+                <button class="btn-filter active" onclick="filterData('ALL')">全部行程</button>
+                <button class="btn-filter" onclick="filterData('FOOD')">美食饕客</button>
+                <button class="btn-filter" onclick="filterData('MASSAGE')">泰式養生</button>
+                <button class="btn-filter" onclick="filterData('BAR')">高空酒吧</button>
+                <button class="btn-filter" onclick="filterData('SPOT')">景點購物</button>
+            </div>
+
+            <div class="timeline" id="timeline">
+                <!-- 內容由 JavaScript 動態生成 -->
+            </div>
+        </section>
+
+        <!-- 戰術地圖區塊 -->
+        <section class="map-section">
+            <div id="tactical-map"></div>
+        </section>
+    </div>
+
+    <!-- Leaflet JS -->
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <script>
+        // 闔家觀賞版數據 (完全移除成人與夜生活場所)
+        const itineraryData = [
+            // DAY 1
+            { id: 1, date: "2027-01-20", dayLabel: "DAY 1 // 01/20 WED", time: "11:00", name: "高雄小港國際機場 -> 曼谷", type: "SPOT", tag: "tag-spot", typeName: "交通", desc: "開啟泰國雙城闔家度假之旅。", lat: 13.6900, lng: 100.7501, gmap: "https://maps.google.com" },
+            { id: 2, date: "2027-01-20", dayLabel: "DAY 1 // 01/20 WED", time: "16:00", name: "Centre Point Hotel Sukhumvit 10", type: "SPOT", tag: "tag-spot", typeName: "飯店Check-in", desc: "曼谷住宿點，交通便利，設施完善適合全家入住。", lat: 13.7312, lng: 100.5582, gmap: "https://maps.google.com/?q=Centre+Point+Hotel+Sukhumvit+10" },
+            { id: 3, date: "2027-01-20", dayLabel: "DAY 1 // 01/20 WED", time: "18:30", name: "Red大哥水門雞飯", type: "FOOD", tag: "tag-food", typeName: "美食", desc: "曼谷超熱門米其林推薦 Hainanese Chicken Rice，雞肉滑嫩可口。", lat: 13.7490, lng: 100.5415, gmap: "https://maps.google.com/?q=Go-Ang+Pratunam+Chicken+Rice" },
+
+            // DAY 2
+            { id: 4, date: "2027-01-21", dayLabel: "DAY 2 // 01/21 THU", time: "12:00", name: "Blue Elephant Royal Thai Cuisine (藍象餐廳)", type: "FOOD", tag: "tag-food", typeName: "米其林美食", desc: "享譽國際的高級泰國宮廷料理，極具代表性的文化美食體驗。", lat: 13.7183, lng: 100.5217, gmap: "https://maps.google.com/?q=Blue+Elephant+Bangkok" },
+            { id: 5, date: "2027-01-21", dayLabel: "DAY 2 // 01/21 THU", time: "15:30", name: "14 Zen Thai Massage", type: "MASSAGE", tag: "tag-massage", typeName: "泰式養生", desc: "傳統正宗泰式舒壓按摩，消除旅途疲勞。", lat: 13.7325, lng: 100.5601, gmap: "https://maps.google.com" },
+            { id: 6, date: "2027-01-21", dayLabel: "DAY 2 // 01/21 THU", time: "20:00", name: "BKK Social Club", type: "BAR", tag: "tag-bar", typeName: "高空酒吧", desc: "位於曼谷四季酒店，亞洲 50 大最佳酒吧之一，氛圍優雅高級。", lat: 13.7128, lng: 100.5108, gmap: "https://maps.google.com/?q=BKK+Social+Club" },
+
+            // DAY 3
+            { id: 7, date: "2027-01-22", dayLabel: "DAY 3 // 01/22 FRI", time: "12:00", name: "Longhorn Steakhouse Bangkok", type: "FOOD", tag: "tag-food", typeName: "美食", desc: "頂級精選美式牛排館，提供親友聚餐的高品質美味。", lat: 13.7340, lng: 100.5620, gmap: "https://maps.google.com" },
+            { id: 8, date: "2027-01-22", dayLabel: "DAY 3 // 01/22 FRI", time: "19:00", name: "Unculture Silom Rooftop Bar", type: "BAR", tag: "tag-bar", typeName: "高空酒吧", desc: "俯瞰曼谷夜景，享受璀璨霓虹夜景與悠閒氣氛。", lat: 13.7280, lng: 100.5350, gmap: "https://maps.google.com" },
+
+            // DAY 4 (轉移至芭達雅)
+            { id: 9, date: "2027-01-23", dayLabel: "DAY 4 // 01/23 SAT", time: "11:00", name: "前往芭達雅 (Pattaya)", type: "SPOT", tag: "tag-spot", typeName: "交通移動", desc: "專車前往度假勝地芭達雅，欣賞沿海美景。", lat: 12.9348, lng: 100.8825, gmap: "https://maps.google.com" },
+            { id: 10, date: "2027-01-23", dayLabel: "DAY 4 // 01/23 SAT", time: "14:00", name: "Mytt Hotel Pattaya", type: "SPOT", tag: "tag-spot", typeName: "飯店Check-in", desc: "芭達雅五星級奢華飯店入住，享受海景與頂樓泳池設施。", lat: 12.9482, lng: 100.8886, gmap: "https://maps.google.com/?q=Mytt+Hotel+Pattaya" },
+
+            // DAY 5 & 6
+            { id: 11, date: "2027-01-24", dayLabel: "DAY 5 // 01/24 SUN", time: "16:00", name: "Pattaya Beach & Terminal 21", type: "SPOT", tag: "tag-spot", typeName: "景點購物", desc: "芭達雅海灘漫步與航站百貨購物踩點。", lat: 12.9501, lng: 100.8892, gmap: "https://maps.google.com/?q=Terminal+21+Pattaya" },
+            { id: 12, date: "2027-01-26", dayLabel: "DAY 7 // 01/26 TUE", time: "14:00", name: "曼谷 BKK 機場 -> 賦歸", type: "SPOT", tag: "tag-spot", typeName: "返程航班", desc: "滿載美好回億，結束曼谷芭達雅雙城之旅。", lat: 13.6900, lng: 100.7501, gmap: "https://maps.google.com" }
+        ];
+
+        // 初始化地圖 (使用 Esri 暗色圖資，穩定不被擋)
+        const map = L.map('tactical-map').setView([13.736717, 100.523186], 11);
+        
+        L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}', {
+            attribution: 'Tiles &copy; Esri',
+            maxZoom: 16,
+            crossOrigin: true
+        }).addTo(map);
+
+        let markers = [];
+
+        // 繪製卡片與地圖 Pin
+        function renderTimeline(data) {
+            const container = document.getElementById('timeline');
+            container.innerHTML = '';
+            
+            // 清除舊 Marker
+            markers.forEach(m => map.removeLayer(m));
+            markers = [];
+
+            let currentDate = '';
+
+            data.forEach(item => {
+                // 日期標題
+                if (item.dayLabel !== currentDate) {
+                    currentDate = item.dayLabel;
+                    const dateEl = document.createElement('div');
+                    dateEl.className = 'date-header';
+                    dateEl.innerHTML = `<span>${currentDate}</span>`;
+                    container.appendChild(dateEl);
+                }
+
+                // 行程卡片
+                const card = document.createElement('div');
+                card.className = 'card';
+                card.onclick = () => focusMap(item.lat, item.lng);
+                card.innerHTML = `
+                    <div class="card-meta">
+                        <span>${item.time}</span>
+                        <span class="card-tag ${item.tag}">${item.typeName}</span>
+                    </div>
+                    <div class="card-title">${item.name}</div>
+                    <div class="card-desc">${item.desc}</div>
+                    <div class="card-actions">
+                        <span>📍 LOCATION MARKED</span>
+                        <a href="${item.gmap}" target="_blank" class="btn-nav" onclick="event.stopPropagation()">🗺️ Google Maps 導航 ↗</a>
+                    </div>
+                `;
+                container.appendChild(card);
+
+                // 新增地圖 Pin 點
+                const customIcon = L.divIcon({
+                    className: 'custom-pin',
+                    iconSize: [12, 12]
+                });
+                const marker = L.marker([item.lat, item.lng], { icon: customIcon })
+                    .bindPopup(`<b>${item.name}</b><br>${item.typeName}`)
+                    .addTo(map);
+                markers.push(marker);
+            });
+        }
+
+        // 聚焦地圖位置
+        function focusMap(lat, lng) {
+            map.flyTo([lat, lng], 14, { duration: 1.5 });
+        }
+
+        // 標籤篩選
+        function filterData(type) {
+            document.querySelectorAll('.btn-filter').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+
+            if (type === 'ALL') {
+                renderTimeline(itineraryData);
+                map.setView([13.3, 100.7], 9);
+            } else {
+                const filtered = itineraryData.filter(d => d.type === type);
+                renderTimeline(filtered);
+            }
+        }
+
+        // 倒數計時器 (2027-01-20)
+        function startCountdown() {
+            const target = new Date("2027-01-20T00:00:00+07:00").getTime();
+            setInterval(() => {
+                const now = new Date().getTime();
+                const diff = target - now;
+
+                if (diff > 0) {
+                    document.getElementById('d').innerText = Math.floor(diff / (1000 * 60 * 60 * 24));
+                    document.getElementById('h').innerText = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
+                    document.getElementById('m').innerText = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+                    document.getElementById('s').innerText = Math.floor((diff % (1000 * 60)) / 1000);
+                }
+            }, 1000);
+        }
+
+        // 初始載入
+        renderTimeline(itineraryData);
+        startCountdown();
+    </script>
+</body>
+</html>
