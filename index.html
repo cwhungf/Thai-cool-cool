@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer-when-downgrade">
+    <title>BANGKOK & PATTAYA 2027 // FAMILY TACTICAL DASHBOARD</title>
+    
+    <!-- Leaflet CSS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700;900&family=Noto+Sans+TC:wght@300;500;700&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-color: #08090c;
+            --card-bg: rgba(16, 20, 29, 0.85);
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff0055;
+            --neon-yellow: #ffe600;
+            --neon-green: #00ff66;
+            --text-main: #e0e6ed;
+            --text-dim: #7a8b9e;
+            --border-color: rgba(0, 243, 255, 0.2);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Noto Sans TC', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            background-image: 
+                radial-gradient(circle at 50% 0%, rgba(0, 243, 255, 0.08), transparent 70%),
+                linear-gradient(0deg, rgba(8, 9, 12, 0.9) 0%, rgba(8, 9, 12, 0.9) 100%);
+            min-height: 100vh;
+            padding-bottom: 40px;
+        }
+
+        /* 賽博龐克抬頭指示器 */
+        header {
+            background: rgba(10, 14, 23, 0.95);
+            border-bottom: 1px solid var(--neon-cyan);
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.2);
+            padding: 20px 15px;
+            position: sticky;
+            top: 0;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+
+        .header-container {
+            max-width: 1200
